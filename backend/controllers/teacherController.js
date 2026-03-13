@@ -4,11 +4,11 @@ import ESETeacher from "../models/ESETeacher.js";
 
 export const createTeacher = async (req, res) => {
   try {
-    const { name} = req.body;
+    const { name, Type} = req.body;
 
     const teacher = await Teacher.create({
       name,
-      unavailableDates: []
+      Type
     });
 
     res.status(201).json(teacher);

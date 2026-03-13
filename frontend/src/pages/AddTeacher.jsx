@@ -3,14 +3,16 @@ import API from "../api";
 
 export default function AddTeacher() {
     const [name, setName] = useState("");
+    const [Type, setType] = useState("Teacher");
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
-            await API.post("/teachers", { name });
+            await API.post("/teachers", { name, Type });
             alert("Teacher added successfully!");
             setName("");
+            setType("Teacher");
         } catch (error) {
             alert("Error adding teacher");
         }
@@ -25,6 +27,7 @@ export default function AddTeacher() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
 
+                    {/* Teacher Name */}
                     <input
                         type="text"
                         placeholder="Teacher Name"
@@ -33,6 +36,16 @@ export default function AddTeacher() {
                         className="border p-2 w-full rounded"
                         required
                     />
+
+                    {/* Teacher Type Dropdown */}
+                    <select
+                        value={Type}
+                        onChange={(e) => setType(e.target.value)}
+                        className="border p-2 w-full rounded"
+                    >
+                        <option value="Teacher">Teacher</option>
+                        <option value="TA">TA</option>
+                    </select>
 
                     <button
                         type="submit"
