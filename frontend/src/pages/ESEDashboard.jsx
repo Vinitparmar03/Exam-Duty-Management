@@ -76,8 +76,9 @@ export default function ESEDashboard() {
     // ✅ Change teacher (Admin only)
     const changeTeacher = async (dutyId, oldTeacherId) => {
         try {
-            await API.put(`/ese-duty/change/${dutyId}/${oldTeacherId}`);
+            const res = await API.put(`/ese-duty/change/${dutyId}/${oldTeacherId}`);
             fetchDuty(appliedFilters);
+            alert(`${res.data.newTeacher} got selected`);
         } catch (error) {
             alert("Error changing teacher");
         }

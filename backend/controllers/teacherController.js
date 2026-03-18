@@ -39,7 +39,7 @@ export const getAllTeachersNames = async (req, res) => {
 export const sendRandomTeachers = async (req, res) => {
   try {
     const { taCount, teacherCount, email } = req.body;
-
+    
     if (
       taCount === undefined ||
       teacherCount === undefined ||
@@ -49,36 +49,36 @@ export const sendRandomTeachers = async (req, res) => {
         message: "taCount, teacherCount and email are required"
       });
     }
-
+    
     // 🔥 Get all teachers
     const teachers = await Teacher.find();
-
+    
     if (teachers.length === 0) {
       return res.status(400).json({
         message: "No teachers available"
       });
     }
-
+    console.log(teachers.length)
     // =====================================================
     // 1️⃣ FILTER: Only those NOT on leave
     // =====================================================
     const availableTeachers = teachers.filter(
-      teacher => teacher.isOnLeave === false
+      teacher => teacher.isOnLeave !== true
     );
-
+    
     if (availableTeachers.length === 0) {
       return res.status(400).json({
         message: "No available staff (all are on leave)"
       });
     }
-
+    
     // =====================================================
     // 2️⃣ SEPARATE TA & TEACHERS
     // =====================================================
     const availableTAs = availableTeachers.filter(
       t => t.Type === "TA"
     );
-
+    
     const availableTeachersOnly = availableTeachers.filter(
       t => t.Type === "Teacher"
     );
@@ -86,7 +86,7 @@ export const sendRandomTeachers = async (req, res) => {
     // Shuffle randomly
     const shuffledTAs = availableTAs.sort(() => 0.5 - Math.random());
     const shuffledTeachers = availableTeachersOnly.sort(() => 0.5 - Math.random());
-
+  
     // =====================================================
     // 3️⃣ SELECT REQUIRED TA
     // =====================================================
@@ -149,7 +149,7 @@ export const sendRandomTeachers = async (req, res) => {
           <p><strong>Selected Staff:</strong></p>
           <ul>
             ${selected
-              .map(t => `<li>${t.name} (${t.Type})</li>`)
+              .map(t => `<li>${t.name}</li>`)
               .join("")}
           </ul>
 

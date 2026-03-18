@@ -78,6 +78,7 @@ export const assignTeachersAndSendEmail = async (req, res) => {
       return true;
     });
 
+
     if (teachers.length === 0) {
       return res.status(400).json({
         message: "No teacher available due to leave restrictions."
@@ -115,22 +116,67 @@ export const assignTeachersAndSendEmail = async (req, res) => {
     if (shift === "Morning" || shift === "Evening") {
 
       // 🔥 Step 1: Select ALL TA directly from teachers (ignore alreadyAssigned)
-      const availableTA = teachers.filter(t => t.Type === "TA");
+      const assignedOnSameSlot = await ESEDuty.find({
+        date,
+        shift
+      }).distinct("teacher");
+
+      const assignedSet = new Set(
+        assignedOnSameSlot.map(id => id.toString())
+      );
+
+      const availableTA = teachers
+        .filter(t => t.Type === "TA")
+        .filter(t => !assignedSet.has(t._id.toString()));
 
       selectedTeachers.push(...availableTA);
 
       let remaining = count - selectedTeachers.length;
-
       // 🔥 Step 2: Select Teachers (lowest dutyCount) from unassigned list
       if (remaining > 0) {
+
 
         const availableTeachersOnly = unassignedTeachers
           .filter(t => t.Type === "Teacher")
           .sort((a, b) => a.dutyCount - b.dutyCount);
 
+        
+
         selectedTeachers.push(
           ...availableTeachersOnly.slice(0, remaining)
         );
+        
+        
+       if (selectedTeachers.length < count) {
+
+        const excludeIds = availableTeachersOnly.map(t => t._id);
+        const moreExcludeIdsOfTA = availableTA.map(t=>t._id);
+
+        // Step 1: get candidate teachers
+        let usedTeachers = await ESETeacher.find({
+          _id: { 
+            $in: alreadyAssignedIds,
+            $nin: [...excludeIds, ...moreExcludeIdsOfTA]
+          },
+          Type: "Teacher"           
+        })
+        .sort({ dutyCount: 1 })    
+        .limit(remaining);
+
+        // Step 2: find already assigned teachers on same date & shift
+        let assignedOnSameSlot = await ESEDuty.find({
+          date,
+          shift
+        }).distinct("teacher");
+
+        // Step 3: filter teachers NOT assigned in same slot
+        let filteredTeachers = usedTeachers.filter(
+          t => !assignedOnSameSlot.some(id => id.toString() === t._id.toString())
+        );
+
+        // Step 4: push correct data
+        selectedTeachers.push(...filteredTeachers);
+      }
       }
 
     } else if (shift === "Afternoon") {
@@ -141,6 +187,36 @@ export const assignTeachersAndSendEmail = async (req, res) => {
         .sort((a, b) => a.dutyCount - b.dutyCount);
 
       selectedTeachers = availableTeachersOnly.slice(0, count);
+
+      if (selectedTeachers.length < count) {
+
+        const excludeIds = availableTeachersOnly.map(t => t._id);
+      
+        // Step 1: get candidate teachers
+        let usedTeachers = await ESETeacher.find({
+          _id: { 
+            $in: alreadyAssignedIds,
+            $nin: excludeIds
+          },
+          Type: "Teacher"           
+        })
+        .sort({ dutyCount: 1 })    
+        .limit(remaining);
+
+        // Step 2: find already assigned teachers on same date & shift
+        let assignedOnSameSlot = await ESEDuty.find({
+          date,
+          shift
+        }).distinct("teacher");
+
+        // Step 3: filter teachers NOT assigned in same slot
+        let filteredTeachers = usedTeachers.filter(
+          t => !assignedOnSameSlot.some(id => id.toString() === t._id.toString())
+        );
+
+        // Step 4: push correct data
+        selectedTeachers.push(...filteredTeachers);
+      }
     }
 
     if (selectedTeachers.length === 0) {
@@ -148,6 +224,11 @@ export const assignTeachersAndSendEmail = async (req, res) => {
         message: "No eligible teachers found."
       });
     }
+
+    if(count < 0){
+      selectedTeachers= selectedTeachers.slice(0, count);
+    }
+
 
     const selectedIds = selectedTeachers.map(t => t._id);
 
@@ -170,6 +251,8 @@ export const assignTeachersAndSendEmail = async (req, res) => {
     // 7️⃣ Update dutyCount for all selected
     // ==================================================
 
+    selectedTeachers = selectedTeachers.slice(0, count); // Ensure we only update the selected count of teachers
+
     for (let teacher of selectedTeachers) {
       teacher.dutyCount += 1;
       await teacher.save();
@@ -184,7 +267,7 @@ export const assignTeachersAndSendEmail = async (req, res) => {
     await sendAdminEmail(email, teacherNames, date);
 
     res.json({
-      message: "Teachers assigned successfully",
+      message: `${teacherNames.length} Teachers assigned successfully`,
       teachers: teacherNames
     });
 
