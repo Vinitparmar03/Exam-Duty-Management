@@ -1,11 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
 import API from "../../api";
+import { FaPlus, FaMinus } from "react-icons/fa";
 
 export default function ESETeacherDashboard() {
 
     const [teachers, setTeachers] = useState([]);
     const [search, setSearch] = useState("");
     const [sortOrder, setSortOrder] = useState("asc"); // asc | desc
+    const [loadingId, setLoadingId] = useState(null);
+
+
 
     // 🔥 Fetch all teachers initially
     const fetchTeachers = async () => {
@@ -19,6 +23,7 @@ export default function ESETeacherDashboard() {
 
     // 🔥 Toggle Leave
     const toggleLeave = async (id, currentStatus) => {
+        console.log("hello")
         await API.put(`/ese-teachers/${id}/leave`, {
             isOnLeave: !currentStatus
         });
@@ -40,6 +45,20 @@ export default function ESETeacherDashboard() {
 
         return filtered;
     }, [teachers, search, sortOrder]);
+
+    const updateDuty = async (id, type) => {
+        try {
+            setLoadingId(id); // disable buttons
+
+            await API.put(`/ese-teachers/${id}/duty`, { type });
+
+            await fetchTeachers();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingId(null);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-100 p-6">
@@ -104,8 +123,8 @@ export default function ESETeacherDashboard() {
                                         <td className="p-3">
                                             <span
                                                 className={`px-2 py-1 rounded text-white text-sm ${teacher.Type === "Teacher"
-                                                        ? "bg-blue-600"
-                                                        : "bg-purple-600"
+                                                    ? "bg-blue-600"
+                                                    : "bg-purple-600"
                                                     }`}
                                             >
                                                 {teacher.Type}
@@ -114,7 +133,30 @@ export default function ESETeacherDashboard() {
 
                                         {/* Duty Count */}
                                         <td className="p-3">
-                                            {teacher.dutyCount}
+                                            <button
+                                                disabled={loadingId === teacher._id}
+                                                onClick={() => updateDuty(teacher._id, "decrement")}
+                                                className={`p-2 rounded text-white ${loadingId === teacher._id
+                                                    ? "bg-gray-400 cursor-not-allowed"
+                                                    : "bg-red-500 hover:bg-red-600"
+                                                    }`}
+                                            >
+                                                <FaMinus size={12} />
+                                            </button>
+                                            <span className="font-semibold inline-flex w-7 content-center justify-center">
+                                                {teacher.dutyCount}
+                                            </span>
+
+                                            <button
+                                                disabled={loadingId === teacher._id}
+                                                onClick={() => updateDuty(teacher._id, "increment")}
+                                                className={`p-2 rounded text-white ${loadingId === teacher._id
+                                                    ? "bg-gray-400 cursor-not-allowed"
+                                                    : "bg-red-500 hover:bg-red-600"
+                                                    }`}
+                                            >
+                                                <FaPlus size={12} />
+                                            </button>
                                         </td>
 
                                         {/* Leave Status */}
@@ -137,8 +179,8 @@ export default function ESETeacherDashboard() {
                                                     toggleLeave(teacher._id, teacher.isOnLeave)
                                                 }
                                                 className={`px-3 py-1 rounded text-white ${teacher.isOnLeave
-                                                        ? "bg-green-500"
-                                                        : "bg-red-500"
+                                                    ? "bg-green-500"
+                                                    : "bg-red-500"
                                                     }`}
                                             >
                                                 {teacher.isOnLeave

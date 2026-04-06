@@ -1,5 +1,5 @@
 import express from "express";
-import { addLeaveRange, assignTeachersAndSendEmail, getESETeachers, getTeachersWithLeave, searchTeachers, setTeacherLeave, updateUnavailableDate } from "../controllers/eseTeacherController.js";
+import { addLeaveRange, assignTeachersAndSendEmail, getESETeachers, getTeachersWithLeave, leaveDashboard, searchTeachers, setTeacherLeave, updateDutyCount, updateUnavailableDate } from "../controllers/eseTeacherController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -12,6 +12,8 @@ router.post("/ese-teacher-assign", protect,  assignTeachersAndSendEmail);
 router.post("/add-leave-range", addLeaveRange);
 router.get("/with-leave", getTeachersWithLeave);
 router.put("/update-leave", updateUnavailableDate);
+router.put("/:id/duty", updateDutyCount);
+router.get("/leave-dashboard", leaveDashboard);
 
 
 

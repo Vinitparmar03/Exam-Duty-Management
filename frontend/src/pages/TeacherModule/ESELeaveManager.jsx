@@ -117,15 +117,18 @@ export default function ESELeaveManager() {
                     </select>
 
                     {/* Shift */}
-                    <select
-                        value={shift}
-                        onChange={(e) => setShift(e.target.value)}
-                        className="border p-2 rounded w-full"
-                    >
-                        <option value="Full Day">Full Day</option>
-                        <option value="Half Day">Half Day</option>
-                        <option value="Second Half Day">Second Half Day</option>
-                    </select>
+                    {leaveType === "isOnLeave" && (
+                        <select
+                            value={shift}
+                            onChange={(e) => setShift(e.target.value)}
+                            className="border p-2 rounded w-full"
+                        >
+                            <option value="Full Day">Full Day</option>
+                            <option value="Half Day">Half Day</option>
+                            <option value="Second Half Day">Second Half Day</option>
+                        </select>
+                    )}
+
 
                     {/* Submit Button */}
                     <button className="bg-blue-600 text-white w-full py-2 rounded">

@@ -467,3 +467,78 @@ export const updateUnavailableDate = async (req, res) => {
 
 
 
+export const updateDutyCount = async (req, res) => {
+    try {
+        const { type } = req.body;
+
+        let update = {};
+
+        if (type === "increment") {
+            update = { $inc: { dutyCount: 1 } };
+        } else if (type === "decrement") {
+            update = { $inc: { dutyCount: -1 } };
+        }
+
+        const teacher = await ESETeacher.findByIdAndUpdate(
+            req.params.id,
+            update,
+            { new: true }
+        );
+
+        res.json(teacher);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+}
+
+export const leaveDashboard = async (req, res) => {
+  try {
+    const { date, includeOnLeave } = req.query;
+
+    let teachers = [];
+
+    // 🔥 CASE 1: Toggle ON → Only isOnLeave = true
+    if (includeOnLeave === "true") {
+      teachers = await ESETeacher.find({ isOnLeave: true });
+
+      const result = teachers.map((teacher) => ({
+        name: teacher.name,
+        isOnLeave: true,
+        shift: "Full Day",
+        leaveType: "isOnLeave"
+      }));
+
+      return res.json(result);
+    }
+
+    // 🔥 CASE 2: Toggle OFF → Date-based
+    if (!date) {
+      return res.status(400).json([]);
+    }
+
+    teachers = await ESETeacher.find({
+      unavailableDates: {
+        $elemMatch: { date }
+      }
+    });
+
+    const result = teachers.map((teacher) => {
+      const leave = teacher.unavailableDates.find(
+        (d) => d.date === date
+      );
+
+      return {
+        name: teacher.name,
+        isOnLeave: teacher.isOnLeave,
+        shift: leave ? leave.shift : "Full Day",
+        leaveType: leave ? leave.leaveType : "General Leave"
+      };
+    });
+
+    res.json(result);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json([]);
+  }
+};
